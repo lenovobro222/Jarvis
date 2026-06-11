@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,100;0,300;0,400;0,600;1,300&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg:         #020810;
+    --bg2:        #040d1a;
+    --panel:      #060f1f;
+    --border:     #0a2040;
+    --border2:    #0d3060;
+    --blue:       #00a8ff;
+    --blue-dim:   #005580;
+    --blue-glow:  rgba(0,168,255,0.15);
+    --blue-pulse: rgba(0,168,255,0.4);
+    --cyan:       #00e5ff;
+    --cyan-dim:   #007a88;
+    --text:       #c8dff0;
+    --text-dim:   #4a7a9b;
+    --text-bright:#e8f4ff;
+    --red:        #ff3b5c;
+    --green:      #00ff9d;
+    --warning:    #ffb800;
+    --arc:        rgba(0,168,255,0.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,168,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,168,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80vw;
+    height: 60vh;
+    background: radial-gradient(ellipse, rgba(0,100,200,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 100px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 32px 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--blue), transparent);
+    animation: scanH 4s linear infinite;
+  }
+
+  @keyframes scanH {
+    0%   { opacity: 0.3; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .arc-reactor {
+    width: 48px;
+    height: 48px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .arc-reactor svg {
+    width: 100%;
+    height: 100%;
+    animation: reactorSpin 8s linear infinite;
+    filter: drop-shadow(0 0 8px var(--blue));
+  }
+
+  @keyframes reactorSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  .arc-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--cyan), 0 0 24px var(--blue);
+    animation: corePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes corePulse {
+    0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+    50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.2); }
+  }
+
+  .logo-text h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5em;
+    color: var(--blue);
+    text-shadow: 0 0 20px var(--blue-pulse);
+    line-height: 1;
+  }
+
+  .logo-text p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  .status-dot.idle { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .status-dot.thinking { background: var(--warning); box-shadow: 0 0 6px var(--warning); animation: blink 0.5s ease-in-out infinite; }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .chat-area {
+    flex: 1;
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 400px;
+  }
+
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 60px 0;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .welcome-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--blue);
+    letter-spacing: 0.2em;
+  }
+
+  .welcome-sub {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    max-width: 400px;
+    line-height: 1.7;
+  }
+
+  .welcome-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .chip {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    padding: 8px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Exo 2', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .chip:hover {
+    border-color: var(--blue-dim);
+    color: var(--blue);
+    background: var(--blue-glow);
+  }
+
+  .message {
+    display: flex;
+    gap: 14px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-family: 'Share Tech Mono', monospace;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .msg-avatar.jarvis {
+    background: linear-gradient(135deg, #001428, #002850);
+    border: 1px solid var(--blue-dim);
+    color: var(--blue);
+    box-shadow: 0 0 10px rgba(0,168,255,0.15);
+  }
+
+  .msg-avatar.user {
+    background: linear-gradient(135deg, #0a1a0a, #0a2a0a);
+    border: 1px solid #1a4a1a;
+    color: var(--green);
+  }
+
+  .msg-content {
+    flex: 1;
+    max-width: calc(100% - 48px);
+  }
+
+  .msg-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .message.user .msg-label { text-align: right; color: #2a6a2a; }
+
+  .msg-bubble {
+    padding: 14px 18px;
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .message.jarvis .msg-bubble {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--blue-dim);
+  }
+
+  .message.user .msg-bubble {
+    background: #050f05;
+    border: 1px solid #0f2a0f;
+    border-right: 2px solid #1a5a1a;
+    text-align: left;
+  }
+
+  .msg-bubble h1, .msg-bubble h2, .msg-bubble h3 {
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--blue);
+    margin: 1em 0 0.4em;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .msg-bubble h1 { font-size: 1.2rem; }
+  .msg-bubble h2 { font-size: 1rem; }
+  .msg-bubble h3 { font-size: 0.9rem; }
+  .msg-bubble p { margin-bottom: 0.7em; color: var(--text); }
+  .msg-bubble p:last-child { margin-bottom: 0; }
+  .msg-bubble ul, .msg-bubble ol { padding-left: 1.4em; margin-bottom: 0.7em; }
+  .msg-bubble li { margin-bottom: 0.3em; color: var(--text); }
+  .msg-bubble strong { color: var(--cyan); font-weight: 600; }
+  .msg-bubble em { color: var(--text-bright); font-style: italic; }
+  .msg-bubble code {
+    background: rgba(0,168,255,0.08);
+    border: 1px solid var(--border2);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85em;
+    color: var(--cyan);
+  }
+  .msg-bubble pre {
+    background: #020c18;
+    border: 1px solid var(--border2);
+    padding: 14px 16px;
+    border-radius: 2px;
+    overflow-x: auto;
+    margin: 0.8em 0;
+  }
+  .msg-bubble pre code { background: none; border: none; padding: 0; font-size: 0.82em; }
+  .msg-bubble blockquote { border-left: 2px solid var(--blue-dim); padding-left: 14px; color: var(--text-dim); margin: 0.7em 0; }
+  .msg-bubble hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
+  .msg-bubble table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 0.88em; }
+  .msg-bubble th { background: var(--bg2); color: var(--blue); padding: 8px 12px; text-align: left; border: 1px solid var(--border2); font-family: 'Rajdhani', sans-serif; letter-spacing: 0.05em; }
+  .msg-bubble td { padding: 7px 12px; border: 1px solid var(--border); color: var(--text); }
+
+  .streaming::after {
+    content: '▋';
+    color: var(--blue);
+    animation: cursorBlink 0.7s step-end infinite;
+    font-size: 0.9em;
+  }
+
+  @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .thinking-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .thinking-dots span {
+    width: 5px;
+    height: 5px;
+    background: var(--blue-dim);
+    border-radius: 50%;
+    animation: dotBounce 1.2s ease-in-out infinite;
+  }
+
+  .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotBounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40%           { transform: translateY(-6px); opacity: 1; }
+  }
+
+  .search-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--warning);
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .search-spinner {
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid rgba(255,184,0,0.2);
+    border-top-color: var(--warning);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg) 80%, transparent);
+    padding: 16px 0 24px;
+    z-index: 10;
+  }
+
+  .input-wrapper {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    position: relative;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .input-wrapper:focus-within {
+    border-color: var(--blue-dim);
+    box-shadow: 0 0 20px rgba(0,168,255,0.1), inset 0 0 20px rgba(0,168,255,0.03);
+  }
+
+  .input-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--blue-dim), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .input-wrapper:focus-within::before { opacity: 1; }
+
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-bright);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    padding: 16px 120px 16px 18px;
+    resize: none;
+    outline: none;
+    min-height: 56px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  textarea::placeholder { color: var(--text-dim); font-style: italic; }
+
+  .input-actions {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .web-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .web-toggle.active { border-color: var(--warning); color: var(--warning); background: rgba(255,184,0,0.05); }
+  .web-toggle input { display: none; }
+
+  .send-btn {
+    background: linear-gradient(135deg, #002040, #003060);
+    border: 1px solid var(--blue-dim);
+    color: var(--blue);
+    width: 38px;
+    height: 38px;
+    border-radius: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover:not(:disabled) { background: linear-gradient(135deg, #003060, #004080); box-shadow: 0 0 16px rgba(0,168,255,0.3); border-color: var(--blue); }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .send-btn svg { width: 16px; height: 16px; }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    padding: 5px 12px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .input-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 0 2px;
+  }
+
+  .input-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  .hud-corner {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.3;
+  }
+
+  .hud-corner.tl { top: 12px; left: 12px; border-top: 1px solid var(--blue); border-left: 1px solid var(--blue); }
+  .hud-corner.tr { top: 12px; right: 12px; border-top: 1px solid var(--blue); border-right: 1px solid var(--blue); }
+  .hud-corner.bl { bottom: 12px; left: 12px; border-bottom: 1px solid var(--blue); border-left: 1px solid var(--blue); }
+  .hud-corner.br { bottom: 12px; right: 12px; border-bottom: 1px solid var(--blue); border-right: 1px solid var(--blue); }
+
+  #scroll-anchor { height: 1px; }
+
+  @media (max-width: 600px) {
+    .status-bar { display: none; }
+    .logo-text h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hud-corner tl"></div>
+<div class="hud-corner tr"></div>
+<div class="hud-corner bl"></div>
+<div class="hud-corner br"></div>
+
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="arc-reactor">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" stroke="#00a8ff" stroke-width="0.5" opacity="0.4"/>
+          <circle cx="24" cy="24" r="18" stroke="#00a8ff" stroke-width="0.5" opacity="0.3"/>
+          <path d="M24 2 A22 22 0 0 1 46 24" stroke="#00a8ff" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M46 24 A22 22 0 0 1 24 46" stroke="#005580" stroke-width="1" stroke-linecap="round"/>
+          <path d="M24 46 A22 22 0 0 1 2 24" stroke="#00a8ff" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M2 24 A22 22 0 0 1 24 2" stroke="#005580" stroke-width="1" stroke-linecap="round"/>
+          <polygon points="24,10 34,17 34,31 24,38 14,31 14,17" stroke="#00a8ff" stroke-width="0.8" fill="none" opacity="0.5"/>
+        </svg>
+        <div class="arc-core"></div>
+      </div>
+      <div class="logo-text">
+        <h1>JARVIS</h1>
+        <p>JUST A RATHER VERY INTELLIGENT SYSTEM · v2.0</p>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="status-dot idle" id="statusDot"></div>
+        <span id="statusText">STANDBY</span>
+      </div>
+      <div class="status-item" id="msgCount">
+        <span>0 EXCHANGES</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+      <div class="welcome-title">SYSTEMS ONLINE — HOW CAN I ASSIST?</div>
+      <p class="welcome-sub">I'm ready to advise, analyze, research, and solve. Ask me anything — math, code, strategy, science, business, or anything else.</p>
+      <div class="welcome-chips">
+        <div class="chip" onclick="sendChip(this)">Solve a math problem</div>
+        <div class="chip" onclick="sendChip(this)">Debug my code</div>
+        <div class="chip" onclick="sendChip(this)">What's happening in the world today?</div>
+        <div class="chip" onclick="sendChip(this)">Help me make a decision</div>
+        <div class="chip" onclick="sendChip(this)">Explain a complex topic simply</div>
+        <div class="chip" onclick="sendChip(this)">Give me your honest advice</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="scroll-anchor"></div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea
+        id="userInput"
+        placeholder="Ask Jarvis anything…"
+        rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
+        oninput="autoResize(this)"
+      ></textarea>
+      <div class="input-actions">
+        <label class="web-toggle" id="webToggle">
+          <input type="checkbox" id="webSearch" />
+          <span>🌐 WEB</span>
+        </label>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="input-meta">
+      <span class="input-hint">ENTER TO SEND · SHIFT+ENTER FOR NEW LINE</span>
+      <button class="clear-btn" onclick="clearChat()">⊘ CLEAR SESSION</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODEL = 'claude-sonnet-4-6';
+const MAX_TOKENS = 2000;
+
+const SYSTEM_PROMPT = `You are Jarvis — Just A Rather Very Intelligent System. You are the AI advisor of the user, inspired by Tony Stark's Jarvis: brilliant, direct, confident, and efficient.
+
+Your personality:
+- Highly intelligent and articulate — you give real, substantive answers, not vague platitudes
+- Direct and confident — no hedging, no excessive disclaimers, no "I think maybe possibly..."
+- Slightly witty but professional — you can be dry and sharp, but never unprofessional
+- You treat the user as capable — you explain things clearly without being condescending
+- You are a real advisor, not a chatbot — you give genuine recommendations when asked
+- When solving math or technical problems, you show your work clearly and step by step
+- When giving advice, you give your actual recommendation, not "here are some options to consider"
+
+Format:
+- Use markdown naturally — headers for complex responses, code blocks for code, bold for key terms
+- For math: show each step clearly, label what you're doing
+- For code: always include the language label in code blocks
+- Keep responses focused and tight — no padding, no filler
+- End responses cleanly — don't trail off with "let me know if you need anything else" every single time
+
+You have access to web search. Use it when the user asks about current events, real-time data, recent developments, or anything that requires up-to-date information. Don't mention that you're searching — just do it and answer.`;
+
+let conversationHistory = [];
+let isProcessing = false;
+let exchangeCount = 0;
+
+function setStatus(state) {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = 'status-dot';
+  if (state === 'thinking') {
+    dot.classList.add('thinking');
+    text.textContent = 'PROCESSING';
+  } else {
+    dot.classList.add('idle');
+    text.textContent = 'STANDBY';
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+
+function scrollToBottom() {
+  document.getElementById('scroll-anchor').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+}
+
+function updateExchangeCount() {
+  document.getElementById('msgCount').innerHTML = `<span>${exchangeCount} EXCHANGE${exchangeCount !== 1 ? 'S' : ''}</span>`;
+}
+
+document.getElementById('webSearch').addEventListener('change', function() {
+  document.getElementById('webToggle').classList.toggle('active', this.checked);
+});
+
+function addMessage(role, content, isStreaming = false) {
+  hideWelcome();
+  const chatArea = document.getElementById('chatArea');
+  const msg = document.createElement('div');
+  msg.className = `message ${role}`;
+  msg.id = isStreaming ? 'streaming-msg' : '';
+  const avatarText = role === 'jarvis' ? 'J.A.R' : 'YOU';
+  const label = role === 'jarvis' ? 'JARVIS' : 'YOU';
+  msg.innerHTML = `
+    <div class="msg-avatar ${role}">${avatarText}</div>
+    <div class="msg-content">
+      <div class="msg-label">${label}</div>
+      <div class="msg-bubble">
+        ${isStreaming
+          ? `<div id="streaming-content" class="streaming"></div>`
+          : `<div>${marked.parse(content)}</div>`
+        }
+      </div>
+    </div>
+  `;
+  chatArea.appendChild(msg);
+  scrollToBottom();
+  return msg;
+}
+
+function addThinking() {
+  hideWelcome();
+  const chatArea = document.getElementById('chatArea');
+  const msg = document.createElement('div');
+  msg.className = 'message jarvis';
+  msg.id = 'thinking-msg';
+  msg.innerHTML = `
+    <div class="msg-avatar jarvis">J.A.R</div>
+    <div class="msg-content">
+      <div class="msg-label">JARVIS</div>
+      <div class="msg-bubble">
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  `;
+  chatArea.appendChild(msg);
+  scrollToBottom();
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking-msg');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  if (isProcessing) return;
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const useWebSearch = document.getElementById('webSearch').checked;
+  isProcessing = true;
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  setStatus('thinking');
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+  addThinking();
+
+  try {
+    const tools = useWebSearch
+      ? [{ type: 'web_search_20250305', name: 'web_search' }]
+      : undefined;
+
+    const body = {
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      messages: conversationHistory,
+      ...(tools ? { tools } : {}),
+    };
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const didSearch = (data.content || []).some(b => b.type === 'tool_use' || b.type === 'tool_result');
+    const fullText = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('\n\n');
+
+    removeThinking();
+    addMessage('jarvis', '', true);
+    const streamEl = document.getElementById('streaming-content');
+
+    if (didSearch) {
+      const notice = document.createElement('div');
+      notice.className = 'search-notice';
+      notice.innerHTML = `<div class="search-spinner"></div><span>WEB DATA INTEGRATED</span>`;
+      streamEl.parentNode.insertBefore(notice, streamEl);
+    }
+
+    let i = 0;
+    while (i < fullText.length) {
+      streamEl.textContent += fullText.slice(i, i + 3);
+      scrollToBottom();
+      i += 3;
+      await new Promise(r => setTimeout(r, 12));
+    }
+
+    streamEl.classList.remove('streaming');
+    streamEl.innerHTML = marked.parse(fullText);
+    conversationHistory.push({ role: 'assistant', content: fullText });
+    exchangeCount++;
+    updateExchangeCount();
+
+  } catch (err) {
+    removeThinking();
+    const chatArea = document.getElementById('chatArea');
+    const errMsg = document.createElement('div');
+    errMsg.className = 'message jarvis';
+    errMsg.innerHTML = `
+      <div class="msg-avatar jarvis">J.A.R</div>
+      <div class="msg-content">
+        <div class="msg-label">JARVIS</div>
+        <div class="msg-bubble" style="border-left-color: var(--red);">
+          <p style="color:var(--red)">System error: ${err.message}</p>
+        </div>
+      </div>
+    `;
+    chatArea.appendChild(errMsg);
+  } finally {
+    isProcessing = false;
+    document.getElementById('sendBtn').disabled = false;
+    setStatus('idle');
+    scrollToBottom();
+  }
+}
+
+function sendChip(el) {
+  document.getElementById('userInput').value = el.textContent;
+  sendMessage();
+}
+
+function clearChat() {
+  if (isProcessing) return;
+  conversationHistory = [];
+  exchangeCount = 0;
+  updateExchangeCount();
+  setStatus('idle');
+  document.getElementById('chatArea').innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="welcome-title">SESSION CLEARED — READY FOR NEW DIRECTIVES</div>
+      <p class="welcome-sub">All previous context has been wiped. Starting fresh.</p>
+      <div class="welcome-chips">
+        <div class="chip" onclick="sendChip(this)">Solve a math problem</div>
+        <div class="chip" onclick="sendChip(this)">Debug my code</div>
+        <div class="chip" onclick="sendChip(this)">What's happening in the world today?</div>
+        <div class="chip" onclick="sendChip(this)">Help me make a decision</div>
+        <div class="chip" onclick="sendChip(this)">Explain a complex topic simply</div>
+        <div class="chip" onclick="sendChip(this)">Give me your honest advice</div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
